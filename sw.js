@@ -1,0 +1,5 @@
+const CACHE='tip-split-v1';const shell=['./','index.html','style.css','app.js','math.js','receipt.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png'];const ocr=['vendor/tesseract.min.js','vendor/worker.min.js','vendor/tesseract-core-lstm.wasm.js','vendor/tesseract-core-lstm.wasm','vendor/eng.traineddata.gz'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(shell)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('message',e=>{if(e.data==='CACHE_OCR')e.waitUntil((async()=>{try{const c=await caches.open(CACHE);for(const path of ocr){if(!await c.match(path)){const r=await fetch(path);if(!r.ok)throw Error('Missing OCR asset');await c.put(path,r);}}e.source?.postMessage('OFFLINE_READY');}catch{e.source?.postMessage('OFFLINE_PARTIAL');}})());});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request)));});
